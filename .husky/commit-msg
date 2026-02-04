@@ -1,0 +1,38 @@
+#!/bin/sh
+# Run Gerrit's commit-msg hook to generate the Change-Id
+# Get the commit message from the file
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Commit message pattern: <type>: Descriptive msg
+# Types: feature, bugfix, hotfix, refactor, chore, docs, test, fix, feat
+COMMIT_PATTERN="^(feature|bugfix|hotfix|refactor|chore|docs|test|fix|feat): .+$"
+
+if ! echo "$COMMIT_MSG" | head -n 1 | grep -qE "$COMMIT_PATTERN"; then
+  echo ""
+  echo "❌ Invalid commit message:"
+  echo "   \"$(echo "$COMMIT_MSG" | head -n 1)\""
+  echo ""
+  echo "Commit message must follow the pattern:"
+  echo "  <type>: Descriptive message"
+  echo ""
+  echo "Where:"
+  echo "  • type: feature | bugfix | hotfix | refactor | chore | docs | test | fix | feat"
+  echo "  • Descriptive message: A clear description of the change"
+  echo ""
+  echo "Examples:"
+  echo "  ✓ bugfix: fix fetch team details api"
+  echo "  ✓ feature: add stripe express onboarding"
+  echo "  ✓ refactor: optimize database queries"
+  echo "  ✓ chore: update dependencies"
+  echo "  ✓ docs: update api documentation"
+  echo "  ✓ test: add integration tests for payment"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Commit message is valid!"
+
+if [ -f ".git/hooks/commit-msg" ]; then
+.git/hooks/commit-msg "$@"
+fi
