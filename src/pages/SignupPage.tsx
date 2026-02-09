@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff, Github, Facebook, Chrome, AlertCircle, ArrowRight, User, Users, ShieldCheck, ChevronDown, Lock, Mail, UserPlus, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { authService } from '../services/auth.service'
 
 // Background image import
 import loginBg from '../assets/images/login-background.jpg'
@@ -43,6 +44,7 @@ export default function SignupPage() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [selectedRole, setSelectedRole] = useState<Role>(null)
+    const [userId, setUserId] = useState<string | null>(null)
 
     // Step 3: Personal Details States
     const [firstName, setFirstName] = useState('')
@@ -58,7 +60,7 @@ export default function SignupPage() {
         setLoading(true)
         setErrorMessage(null)
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
         })
@@ -66,7 +68,8 @@ export default function SignupPage() {
         setLoading(false)
         if (error) {
             setErrorMessage(error.message)
-        } else {
+        } else if (data.user) {
+            setUserId(data.user.id)
             setStep(2)
         }
     }
@@ -76,11 +79,36 @@ export default function SignupPage() {
         setLoading(true)
         setErrorMessage(null)
 
-        // This is where DB insertion would happen via a backend API or direct Supabase update
-        setTimeout(() => {
+        if (!userId) {
+            setErrorMessage('User ID not found. Please try signing up again.')
             setLoading(false)
-            setSuccessMessage('Registration completed successfully! Welcome to WorkSphere.')
-        }, 1500)
+            return
+        }
+
+        try {
+            await authService.signup({
+                id: userId,
+                email: email,
+                firstName: firstName,
+                lastName: lastName,
+                number: number,
+                address: address,
+                state: state,
+                city: city,
+                zipCode: zipCode,
+                role: selectedRole || undefined,
+            });
+
+            setSuccessMessage('Registration completed successfully! Welcome to WorkSphere.');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+                || 'Something went wrong. Please try again.';
+            setErrorMessage(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleOAuthSignup = async (provider: 'google' | 'facebook' | 'github') => {
