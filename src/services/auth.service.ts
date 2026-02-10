@@ -52,23 +52,12 @@ export const authService = {
      * Logout user
      */
     logout: async () => {
-        try {
-            // Call backend logout
-            await api.post(API.ENDPOINTS.AUTH.LOGOUT);
-        } catch (error) {
-            console.error('Backend logout failed:', error);
-        } finally {
-            // Clear Supabase session
-            await supabase.auth.signOut();
+        // Clear Supabase session
+        await supabase.auth.signOut();
 
-            // Remove cookies
-            Cookies.remove('access_token');
-            Cookies.remove('refresh_token');
-
-            // Clear any lingering localStorage (for backward compatibility or safety)
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-        }
+        // Remove cookies
+        Cookies.remove('access_token');
+        Cookies.remove('refresh_token');
     },
 
     /**
