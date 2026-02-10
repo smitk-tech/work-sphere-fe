@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff, Github, Facebook, Chrome, AlertCircle, ArrowRight, User, Users, ShieldCheck, ChevronDown, Lock, Mail, UserPlus, type LucideIcon } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../services/auth.service'
 
 // Background image import
@@ -36,6 +36,7 @@ const RoleCard = ({ role, title, icon: Icon, selected, onSelect }: RoleCardProps
 )
 
 export default function SignupPage() {
+    const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -100,6 +101,9 @@ export default function SignupPage() {
             });
 
             setSuccessMessage('Registration completed successfully! Welcome to WorkSphere.');
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 2000);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error
                 ? error.message

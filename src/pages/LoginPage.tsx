@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff, Lock, Mail, LogIn, Github, Facebook, Chrome, AlertCircle, UserPlus, ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 // Background image import (assuming Vite handles this correctly)
 import loginBg from '../assets/images/login-background.jpg'
 
 export default function LoginPage() {
+    const navigate = useNavigate()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -37,7 +38,7 @@ export default function LoginPage() {
             }
         } else {
             // Success
-            alert('Logged in.')
+            navigate('/dashboard')
         }
     }
 

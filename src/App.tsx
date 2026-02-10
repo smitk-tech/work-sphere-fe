@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import NewPasswordPage from './pages/NewPasswordPage'
+import DashboardPage from './pages/DashboardPage'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
         <Route path="/newpassword" element={<NewPasswordPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
