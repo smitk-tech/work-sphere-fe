@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff, Github, Facebook, Chrome, AlertCircle, ArrowRight, User, Users, ShieldCheck, ChevronDown, Lock, Mail, UserPlus, type LucideIcon } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../services/auth.service'
+import Cookies from 'js-cookie'
 
 // Background image import
 import loginBg from '../assets/images/login-background.jpg'
@@ -70,6 +71,10 @@ export default function SignupPage() {
         if (error) {
             setErrorMessage(error.message)
         } else if (data.user) {
+            if (data.session) {
+                Cookies.set('access_token', data.session.access_token, { expires: data.session.expires_in / 86400, sameSite: 'lax' })
+                Cookies.set('refresh_token', data.session.refresh_token, { expires: 30, sameSite: 'lax' })
+            }
             setUserId(data.user.id)
             setStep(2)
         }

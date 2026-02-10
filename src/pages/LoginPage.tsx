@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff, Lock, Mail, LogIn, Github, Facebook, Chrome, AlertCircle, UserPlus, ArrowRight } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import Cookies from 'js-cookie'
 
 // Background image import (assuming Vite handles this correctly)
 import loginBg from '../assets/images/login-background.jpg'
@@ -22,7 +23,7 @@ export default function LoginPage() {
         setErrorMessage(null)
         setShowSignupHint(false)
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         })
@@ -36,7 +37,11 @@ export default function LoginPage() {
             } else {
                 setErrorMessage(error.message)
             }
-        } else {
+        } else if (data.session) {
+            // Set cookies for access and refresh tokens
+            Cookies.set('access_token', data.session.access_token, { expires: data.session.expires_in / 86400, sameSite: 'lax' })
+            Cookies.set('refresh_token', data.session.refresh_token, { expires: 30, sameSite: 'lax' })
+
             // Success
             navigate('/dashboard')
         }

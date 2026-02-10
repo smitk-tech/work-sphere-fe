@@ -1,7 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { authService } from '../services/auth.service';
 
 interface DashboardProps {
     children: React.ReactNode;
@@ -11,7 +11,7 @@ const Dashboard: React.FC<DashboardProps> = ({ children }) => {
     const navigate = useNavigate();
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await authService.logout();
         navigate('/login');
     };
 

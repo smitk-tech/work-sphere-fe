@@ -1,5 +1,7 @@
 import { api } from './api.service';
 import { API } from '../config/api';
+import { supabase } from '../lib/supabaseClient';
+import Cookies from 'js-cookie';
 
 /**
  * Auth Service
@@ -50,7 +52,23 @@ export const authService = {
      * Logout user
      */
     logout: async () => {
-        return await api.post(API.ENDPOINTS.AUTH.LOGOUT);
+        try {
+            // Call backend logout
+            await api.post(API.ENDPOINTS.AUTH.LOGOUT);
+        } catch (error) {
+            console.error('Backend logout failed:', error);
+        } finally {
+            // Clear Supabase session
+            await supabase.auth.signOut();
+
+            // Remove cookies
+            Cookies.remove('access_token');
+            Cookies.remove('refresh_token');
+
+            // Clear any lingering localStorage (for backward compatibility or safety)
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+        }
     },
 
     /**
