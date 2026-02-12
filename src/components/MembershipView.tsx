@@ -1,11 +1,38 @@
 import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
+import { stripeService } from '../services/stripe.service';
+import StripeCheckout from './StripeCheckout';
 
 const MembershipView: React.FC = () => {
     const [agreed, setAgreed] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+    const handlePayNow = async () => {
+        try {
+            setLoading(true);
+            const secret = await stripeService.createPaymentIntent();
+            console.log("from handle pay now", secret);
+            setClientSecret(secret);
+            setShowCheckout(true);
+        } catch (error) {
+            console.error('Payment failed:', error);
+            // Optionally show error toast
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {showCheckout && clientSecret && (
+                <StripeCheckout
+                    clientSecret={clientSecret}
+                    onCancel={() => setShowCheckout(false)}
+                />
+            )}
+
             {/* Payment Window Section */}
             <div className="max-w-xl mx-auto w-full bg-white rounded-[40px] border border-gray-100 shadow-2xl overflow-hidden p-8 flex flex-col gap-6">
                 <div className="flex flex-col gap-3">
@@ -25,7 +52,7 @@ const MembershipView: React.FC = () => {
                             SP Membership
                         </span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-4xl font-black text-blue-600 tracking-tighter">$60</span>
+                            <span className="text-4xl font-black text-blue-600 tracking-tighter">₹1,200</span>
                         </div>
                     </div>
 
@@ -63,13 +90,14 @@ const MembershipView: React.FC = () => {
                 {/* Footer Action */}
                 <div className="flex flex-col gap-4 mt-4">
                     <button
-                        disabled={!agreed}
+                        onClick={handlePayNow}
+                        disabled={!agreed || loading}
                         className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${agreed
                             ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-200 hover:scale-[1.02] active:scale-100'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed grayscale'
                             }`}
                     >
-                        Pay now
+                        {loading ? <Loader2 className="animate-spin" size={18} /> : 'Pay now'}
                     </button>
                 </div>
             </div>
@@ -102,7 +130,7 @@ const MembershipView: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-sm font-medium text-gray-500">Jan {i}, 2026</td>
-                                    <td className="px-8 py-6 font-black text-gray-900">$249.00</td>
+                                    <td className="px-8 py-6 font-black text-gray-900">₹1,200.00</td>
                                     <td className="px-8 py-6">
                                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[0.65rem] font-black uppercase tracking-widest">Paid</span>
                                     </td>
@@ -116,9 +144,15 @@ const MembershipView: React.FC = () => {
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-sm font-black text-blue-600 italic">Mar 15, 2026</td>
-                                <td className="px-8 py-6 font-black text-gray-900">$249.00</td>
+                                <td className="px-8 py-6 font-black text-gray-900">₹1,200.00</td>
                                 <td className="px-8 py-6">
-                                    <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-[0.65rem] font-black uppercase tracking-widest shadow-lg shadow-blue-100">Pay Now</span>
+                                    <button
+                                        onClick={handlePayNow}
+                                        disabled={loading}
+                                        className="px-3 py-1 bg-blue-600 text-white rounded-full text-[0.65rem] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex items-center gap-2"
+                                    >
+                                        {loading ? <Loader2 size={10} className="animate-spin" /> : 'Pay Now'}
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
