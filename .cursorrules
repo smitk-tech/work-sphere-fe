@@ -1,0 +1,210 @@
+# Frontend Rules (React)
+
+# Cursor Ruleset for Sportspass Frontend
+
+## Project Overview
+
+This is a React TypeScript application for a sports platform with the following tech stack:
+
+- React 19 with TypeScript
+- Vite as build tool
+- Tailwind CSS for styling
+- Radix UI for component primitives
+- Zustand for state management
+- React Hook Form with Yup validation
+- React Router DOM for routing
+
+## Code Organization & Architecture
+
+### File Structure Rules
+
+- **ALWAYS check the current folder structure of the whole project before creating any new thing and create accordingly**
+- Use feature-based organization in `src/` directory
+- Components are organized by domain: `common/`, `ui/`, `location/`, `dashboard/`, `signup/`
+- Pages are organized by feature: `auth/`, `dashboard/`, `settings/`, etc.
+- Use index files for clean exports
+- Follow the established path aliases defined in `tsconfig.json`
+
+### Static Text Management
+
+- **ALWAYS add all static text into the const folder and use from there in its particular file**
+- Organize static text by feature in `src/const/` directory
+- Use descriptive names for text constants
+- Export text constants from index files for clean imports
+- Maintain consistency in text naming conventions
+
+### Import Organization
+
+Follow the import order defined in `.prettierrc`:
+
+1. React imports
+2. Next.js imports (if applicable)
+3. Third-party modules
+4. Internal modules with `@/` aliases
+5. Relative imports
+
+### Component Patterns
+
+#### UI Components (`src/components/ui/`)
+
+- Use Radix UI primitives as base
+- Implement class-variance-authority for variants
+- Use `cn()` utility for className merging
+- Export components with proper TypeScript types
+- Follow the pattern: props interface, component definition, export
+
+#### Common Components (`src/components/common/`)
+
+- Build on top of UI components
+- Include business logic and form integration
+- Use forwardRef for form compatibility
+- Implement proper error handling and validation display
+- **ALWAYS use Button component from common folder instead of button tag directly**
+- **ALWAYS use form field elements from common components instead of using them directly**
+
+#### Feature Components
+
+- Organize by domain (location, dashboard, etc.)
+- Include domain-specific logic
+- Use proper TypeScript interfaces
+
+### TypeScript Guidelines
+
+#### Type Definitions
+
+- **ALWAYS create separate type and interface declarations in the types folder**
+- Define interfaces in `src/types/` directory
+- Use descriptive names with proper suffixes (Props, State, etc.)
+- Export types from index files for clean imports
+- Use strict TypeScript configuration
+
+#### Component Props
+
+- Use React.ComponentProps for extending HTML element props
+- Implement proper prop validation
+- Use optional props with default values
+- Include proper JSDoc comments for complex props
+
+### Styling Guidelines
+
+#### Tailwind CSS
+
+- Use design tokens from the tokens system
+- Follow the established color scheme (base-\*, semantic colors)
+- Use consistent spacing and sizing
+- Implement responsive design patterns
+- Use `cn()` utility for conditional classes
+
+#### Component Styling
+
+- Use semantic class names
+- Implement proper focus states
+- Include hover and active states
+- Use consistent border radius and shadows
+
+### State Management
+
+#### Zustand Stores
+
+- Organize stores by feature in `src/store/`
+- Use TypeScript for store definitions
+- Implement proper state updates
+- Use selectors for derived state
+
+#### Form State
+
+- **ALWAYS use React Hook Form for form management**
+- **ALWAYS create Yup schemas in the schemas folder and use that schema for any particular form**
+- Use proper error handling and display
+- Implement proper form submission patterns
+
+### API Integration
+
+#### API Structure
+
+- Organize API calls by feature in `src/api/`
+- Use Axios for HTTP requests
+- Implement proper error handling
+- Use TypeScript for request/response types
+
+#### Authentication
+
+- Implement proper token management
+- Use secure storage for sensitive data
+- Handle authentication state properly
+- Implement proper logout flows
+
+### Routing
+
+#### Route Organization
+
+- Use React Router DOM for routing
+- Implement protected routes
+- Use proper route parameters
+- Implement proper navigation patterns
+
+### Code Quality
+
+#### ESLint & Prettier
+
+- Follow the established ESLint configuration
+- Use Prettier for code formatting
+- Maintain consistent code style
+- Use proper import sorting
+
+#### Performance
+
+- Implement proper React optimization patterns
+- Use React.memo for expensive components
+- Implement proper lazy loading
+- Use proper key props for lists
+
+### Testing Patterns
+
+- Write unit tests for utility functions
+- Test component behavior and interactions
+- Mock external dependencies properly
+- Use proper test organization
+
+### Error Handling
+
+- Implement proper error boundaries
+- Use consistent error messaging
+- Handle API errors gracefully
+- Provide user-friendly error states
+
+### Accessibility
+
+- Use proper ARIA labels
+- Implement keyboard navigation
+- Use semantic HTML elements
+- Test with screen readers
+
+### Security
+
+- Validate all user inputs
+- Sanitize data before rendering
+- Use proper authentication patterns
+- Implement proper authorization checks
+
+## File Naming Conventions
+
+- Use PascalCase for components and pages
+- Use camelCase for utilities and hooks
+- Use kebab-case for CSS classes
+- Use descriptive names that indicate purpose
+
+## Documentation
+
+- Include JSDoc comments for complex functions
+- Document component props and usage
+- Maintain README files for major features
+- Use inline comments for complex logic
+
+## Git Workflow
+
+- Use conventional commit messages
+- Implement proper branching strategy
+- Review code before merging
+- Maintain clean git history
+
