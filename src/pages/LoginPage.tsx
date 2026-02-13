@@ -41,6 +41,11 @@ export default function LoginPage() {
             // Set cookies for access and refresh tokens
             Cookies.set('access_token', data.session.access_token, { expires: data.session.expires_in / 86400, sameSite: 'lax' })
             Cookies.set('refresh_token', data.session.refresh_token, { expires: 30, sameSite: 'lax' })
+            Cookies.set('user_email', email, { expires: 30, sameSite: 'lax' })
+
+            // Set localStorage for API service
+            localStorage.setItem('accessToken', data.session.access_token);
+            localStorage.setItem('refreshToken', data.session.refresh_token);
 
             // Success
             navigate('/dashboard')

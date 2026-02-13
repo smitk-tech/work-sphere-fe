@@ -1,4 +1,5 @@
 import { api } from './api.service';
+import type { PaymentHistoryItem } from '../types/payment';
 
 /**
  * Stripe Service Class
@@ -7,7 +8,26 @@ import { api } from './api.service';
 class StripeService {
 
     /**
+     * Fetches payment history for the current user or specific customer ID
+     */
+    async getPaymentHistory(email?: string): Promise<PaymentHistoryItem[]> {
+        console.log("email from get payment history", email);
+        try {
+            const url = email
+                ? `/payment/history?email=${email}`
+                : '/payment/history';
+
+            const response = await api.get<PaymentHistoryItem[]>(url);
+            return response.data;
+        } catch (error) {
+            console.error('Failed to fetch payment history:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Creates a payment intent and returns the client secret
+     * @deprecated Use initiatePayment instead for authenticated payments
      */
     async createPaymentIntent() {
         try {

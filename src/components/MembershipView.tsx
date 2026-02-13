@@ -1,13 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { stripeService } from '../services/stripe.service';
 import StripeCheckout from './StripeCheckout';
+import Cookies from 'js-cookie';
+
+import { PAYMENT_TEXT } from '../const/payment';
+import type { PaymentHistoryItem } from '../types/payment';
 
 const MembershipView: React.FC = () => {
     const [agreed, setAgreed] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
+
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        try {
+            setHistoryLoading(true);
+
+            const email = Cookies.get('user_email');
+
+            if (email) {
+                const data = await stripeService.getPaymentHistory(email);
+                console.log("from fetch history", data);
+                setHistory(data);
+            } else {
+                console.log("email not found");
+                console.warn('No user email found in cookies, attempting default fetch');
+                // Fallback to default fetch if cookie missing
+
+                // const data = await stripeService.getPaymentHistory();
+                // setHistory(data);
+            }
+        } catch (error) {
+            console.error('Failed to load history:', error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     const handlePayNow = async () => {
         try {
@@ -22,6 +57,21 @@ const MembershipView: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const formatCurrency = (amount: number, currency: string) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency.toUpperCase(),
+        }).format(amount);
     };
 
     return (
@@ -121,25 +171,46 @@ const MembershipView: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {[1, 2, 3].map((i) => (
-                                <tr key={i} className="group hover:bg-gray-50/30 transition-colors">
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#0{i}</div>
-                                            <span className="font-bold text-gray-900">Premium Membership Full Payment</span>
+                            {historyLoading ? (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Loader2 className="animate-spin text-blue-600" size={32} />
+                                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{PAYMENT_TEXT.HISTORY.LOADING}</span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-sm font-medium text-gray-500">Jan {i}, 2026</td>
-                                    <td className="px-8 py-6 font-black text-gray-900">₹1,200.00</td>
-                                    <td className="px-8 py-6">
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[0.65rem] font-black uppercase tracking-widest">Paid</span>
+                                </tr>
+                            ) : history.length > 0 ? (
+                                history.map((item, index) => (
+                                    <tr key={item.id} className="group hover:bg-gray-50/30 transition-colors">
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#{String(history.length - index).padStart(2, '0')}</div>
+                                                <span className="font-bold text-gray-900">{item.description}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-sm font-medium text-gray-500">{formatDate(item.createdAt)}</td>
+                                        <td className="px-8 py-6 font-black text-gray-900">{formatCurrency(item.amount, item.currency)}</td>
+                                        <td className="px-8 py-6">
+                                            <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest ${item.status === 'succeeded' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-500 font-medium">
+                                        {PAYMENT_TEXT.HISTORY.NO_PAYMENTS}
                                     </td>
                                 </tr>
-                            ))}
+                            )}
+
+                            {/* Static Pending Installment - Conditionally show or remove based on preference, keeping for now as demo */}
                             <tr className="bg-blue-50/30">
                                 <td className="px-8 py-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#04</div>
+                                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#Next</div>
                                         <span className="font-bold text-gray-900">Current Month Installment</span>
                                     </div>
                                 </td>

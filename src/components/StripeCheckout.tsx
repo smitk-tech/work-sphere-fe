@@ -26,6 +26,14 @@ const CheckoutForm: React.FC<{ clientSecret: string; onCancel: () => void }> = (
 
         setIsLoading(true);
 
+        // 0. Submit elements status
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+            setMessage(submitError.message ?? "Validation failed.");
+            setIsLoading(false);
+            return;
+        }
+
         // 1. Create Payment Method from Elements
         const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
             elements,
@@ -46,10 +54,7 @@ const CheckoutForm: React.FC<{ clientSecret: string; onCancel: () => void }> = (
             if (result.status === 'succeeded' || result.status === 'requires_capture') {
                 window.location.href = `${window.location.origin}/dashboard?payment=success`;
             } else if (result.status === 'requires_action' || result.status === 'requires_confirmation') {
-                // If 3D secure is required, handle it with stripe.handleNextAction
-                // This might be complex, but for now let's assume simple flow or basic error
                 setMessage("Additional action required. Redirecting...");
-                // In a real app, you'd use stripe.handleNextAction(result.clientSecret)
             } else {
                 setMessage(`Payment status: ${result.status}`);
             }
@@ -140,6 +145,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ clientSecret, onCancel 
                         stripe={stripePromise}
                         options={{
                             clientSecret,
+                            paymentMethodCreation: 'manual',
                             appearance: {
                                 theme: 'stripe',
                                 variables: {

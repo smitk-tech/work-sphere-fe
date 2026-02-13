@@ -55,9 +55,13 @@ export const authService = {
         // Clear Supabase session
         await supabase.auth.signOut();
 
-        // Remove cookies
+        // Remove all cookies
         Cookies.remove('access_token');
         Cookies.remove('refresh_token');
+        Cookies.remove('user_email');
+
+        // Clear all localStorage
+        localStorage.clear();
     },
 
     /**
