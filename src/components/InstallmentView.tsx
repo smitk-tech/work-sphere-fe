@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Download } from 'lucide-react';
 import { stripeService } from '../services/stripe.service';
 import StripeCheckout from './StripeCheckout';
 import Cookies from 'js-cookie';
@@ -24,7 +24,8 @@ const InstallmentView: React.FC = () => {
             const email = Cookies.get('user_email');
             if (email) {
                 const data = await stripeService.getPaymentHistory(email);
-                setHistory(data);
+                // Filter for subscription payments
+                setHistory(data.filter(item => item.type === 'subscription'));
             }
         } catch (error) {
             console.error('Failed to load history:', error);
@@ -153,12 +154,13 @@ const InstallmentView: React.FC = () => {
                                 <th className="px-8 py-4 text-left text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em]">Due Date</th>
                                 <th className="px-8 py-4 text-left text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em]">Amount</th>
                                 <th className="px-8 py-4 text-left text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em]">Status</th>
+                                <th className="px-8 py-4 text-right text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {historyLoading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-8 py-12 text-center">
+                                    <td colSpan={5} className="px-8 py-12 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <Loader2 className="animate-spin text-blue-600" size={32} />
                                             <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{PAYMENT_TEXT.HISTORY.LOADING}</span>
@@ -192,11 +194,24 @@ const InstallmentView: React.FC = () => {
                                                 {item.status}
                                             </span>
                                         </td>
+                                        <td className="px-8 py-6 text-right text-gray-400">
+                                            {item.downloadUrl && (
+                                                <a
+                                                    href={item.downloadUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group/download"
+                                                    title="Download Invoice"
+                                                >
+                                                    <Download size={16} className="group-hover/download:scale-110 transition-transform" />
+                                                </a>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-500 font-medium">
+                                    <td colSpan={5} className="px-8 py-12 text-center text-gray-500 font-medium">
                                         {PAYMENT_TEXT.HISTORY.NO_PAYMENTS}
                                     </td>
                                 </tr>

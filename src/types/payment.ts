@@ -5,6 +5,8 @@ export interface PaymentHistoryItem {
     status: string;
     createdAt: string;
     description: string;
+    type: 'one_time' | 'subscription';
+    downloadUrl?: string;
 }
 
 export interface PaymentIntentResponse {
