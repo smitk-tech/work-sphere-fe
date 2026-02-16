@@ -1,11 +1,67 @@
 import React, { useState } from 'react';
-import { CreditCard, ArrowUpRight, Clock, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
+import { stripeService } from '../services/stripe.service';
+import StripeCheckout from './StripeCheckout';
+import Cookies from 'js-cookie';
+import type { PaymentHistoryItem } from '../types/payment';
+import { PAYMENT_TEXT } from '../const/payment';
 
 const InstallmentView: React.FC = () => {
     const [agreed, setAgreed] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
+
+    React.useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        try {
+            setHistoryLoading(true);
+            const email = Cookies.get('user_email');
+            if (email) {
+                const data = await stripeService.getPaymentHistory(email);
+                setHistory(data);
+            }
+        } catch (error) {
+            console.error('Failed to load history:', error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handlePayNow = async () => {
+        try {
+            setLoading(true);
+            const email = Cookies.get('user_email');
+            if (!email) {
+                console.error('No user email found');
+                return;
+            }
+
+            const { clientSecret: secret } = await stripeService.createSubscription(5, email);
+            setClientSecret(secret);
+            setShowCheckout(true);
+            // Re-fetch history after successful subscription creation (though it might be incomplete)
+            fetchHistory();
+        } catch (error) {
+            console.error('Subscription failed:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {showCheckout && clientSecret && (
+                <StripeCheckout
+                    clientSecret={clientSecret}
+                    onCancel={() => setShowCheckout(false)}
+                />
+            )}
             {/* EMI Payment Window Section */}
             <div className="max-w-xl mx-auto w-full bg-white rounded-[40px] border border-gray-100 shadow-2xl overflow-hidden p-8 flex flex-col gap-6">
                 <div className="flex flex-col gap-3">
@@ -64,13 +120,12 @@ const InstallmentView: React.FC = () => {
                 {/* Footer Action */}
                 <div className="flex flex-col gap-4 mt-4">
                     <button
-                        disabled={!agreed}
-                        className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${agreed
-                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-200 hover:scale-[1.02] active:scale-100'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed grayscale'
+                        onClick={handlePayNow}
+                        disabled={!agreed || loading}
+                        className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${agreed ? (loading ? 'bg-blue-400 cursor-wait' : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-200 hover:scale-[1.02] active:scale-100') : 'bg-gray-100 text-gray-400 cursor-not-allowed grayscale'
                             }`}
                     >
-                        Pay now
+                        {loading ? <Loader2 className="animate-spin" size={18} /> : 'Pay now'}
                     </button>
                 </div>
             </div>
@@ -81,57 +136,6 @@ const InstallmentView: React.FC = () => {
                 <p className="text-gray-500 font-medium">Track and manage your premium subscription payments.</p>
             </div>
 
-            {/* Installment Summary Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-blue-600 p-6 rounded-[32px] text-white shadow-xl shadow-blue-200">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2 bg-white/20 rounded-xl">
-                            <CreditCard size={20} />
-                        </div>
-                        <span className="text-[0.65rem] font-bold uppercase tracking-widest bg-white/20 px-2 py-1 rounded-md">Upcoming</span>
-                    </div>
-                    <p className="text-sm font-medium opacity-80 uppercase tracking-wider mb-1">Next Payment</p>
-                    <p className="text-2xl font-black">$249.00</p>
-                    <p className="text-[0.7rem] font-bold opacity-60 mt-2 italic">Due on March 15, 2026</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2 bg-gray-100 rounded-xl text-gray-900">
-                            <Clock size={20} />
-                        </div>
-                        <span className="text-[0.65rem] font-bold uppercase tracking-widest text-gray-400">Status</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Remaining</p>
-                    <p className="text-2xl font-black text-gray-900">$1,245.00</p>
-                    <p className="text-[0.7rem] font-bold text-gray-400 mt-2 uppercase tracking-widest">5 Installments left</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2 bg-green-100 rounded-xl text-green-600">
-                            <CheckCircle2 size={20} />
-                        </div>
-                        <span className="text-[0.65rem] font-bold uppercase tracking-widest text-green-600">Paid</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Total Paid</p>
-                    <p className="text-2xl font-black text-gray-900">$747.00</p>
-                    <p className="text-[0.7rem] font-bold text-green-600 mt-2 uppercase tracking-widest">On-time payment rate: 100%</p>
-                </div>
-
-                <div className="bg-gray-900 p-6 rounded-[32px] text-white shadow-xl">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2 bg-white/10 rounded-xl">
-                            <ArrowUpRight size={20} />
-                        </div>
-                    </div>
-                    <p className="text-sm font-medium opacity-60 uppercase tracking-wider mb-1">Quick Action</p>
-                    <h3 className="text-lg font-bold leading-tight mb-4">Pay full amount and save 15%</h3>
-                    <button className="w-full py-2.5 bg-white text-gray-900 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all">
-                        Upgrade Now
-                    </button>
-                </div>
-            </div>
 
             {/* Payment Schedule Table */}
             <div className="bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden">
@@ -152,34 +156,51 @@ const InstallmentView: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {[1, 2, 3].map((i) => (
-                                <tr key={i} className="group hover:bg-gray-50/30 transition-colors">
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#0{i}</div>
-                                            <span className="font-bold text-gray-900">Premium Membership Installment</span>
+                            {historyLoading ? (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Loader2 className="animate-spin text-blue-600" size={32} />
+                                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">{PAYMENT_TEXT.HISTORY.LOADING}</span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-sm font-medium text-gray-500">Jan {i}, 2026</td>
-                                    <td className="px-8 py-6 font-black text-gray-900">$249.00</td>
-                                    <td className="px-8 py-6">
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[0.65rem] font-black uppercase tracking-widest">Paid</span>
+                                </tr>
+                            ) : history.length > 0 ? (
+                                history.map((item, index) => (
+                                    <tr key={item.id} className="group hover:bg-gray-50/30 transition-colors">
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#{String(history.length - index).padStart(2, '0')}</div>
+                                                <span className="font-bold text-gray-900">{item.description}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-sm font-medium text-gray-500">
+                                            {new Date(item.createdAt).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </td>
+                                        <td className="px-8 py-6 font-black text-gray-900">
+                                            {new Intl.NumberFormat('en-IN', {
+                                                style: 'currency',
+                                                currency: item.currency.toUpperCase(),
+                                            }).format(item.amount)}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest ${item.status === 'succeeded' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-500 font-medium">
+                                        {PAYMENT_TEXT.HISTORY.NO_PAYMENTS}
                                     </td>
                                 </tr>
-                            ))}
-                            <tr className="bg-blue-50/30">
-                                <td className="px-8 py-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs italic">#04</div>
-                                        <span className="font-bold text-gray-900">Current Month Installment</span>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6 text-sm font-black text-blue-600 italic">Mar 15, 2026</td>
-                                <td className="px-8 py-6 font-black text-gray-900">$249.00</td>
-                                <td className="px-8 py-6">
-                                    <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-[0.65rem] font-black uppercase tracking-widest shadow-lg shadow-blue-100">Pay Now</span>
-                                </td>
-                            </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

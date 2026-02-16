@@ -29,6 +29,23 @@ class StripeService {
      * Creates a payment intent and returns the client secret
      * @deprecated Use initiatePayment instead for authenticated payments
      */
+    async createSubscription(amount: number, userEmail: string) {
+        try {
+            const response = await api.post<{ subscriptionId: string; clientSecret: string }>('/payment/create-subscription', {
+                amount,
+                userEmail
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Failed to create subscription:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Creates a payment intent and returns the client secret
+     * @deprecated Use initiatePayment instead for authenticated payments
+     */
     async createPaymentIntent() {
         try {
             const response = await api.post<{ clientSecret: string }>('/stripe/create-payment-intent', { amount: 1200 }); // Default amount for now
