@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Loader2, Download } from 'lucide-react';
+import { CheckCircle2, Loader2, Download, RotateCcw } from 'lucide-react';
 import { stripeService } from '../services/stripe.service';
 import StripeCheckout from './StripeCheckout';
 import Cookies from 'js-cookie';
@@ -13,6 +13,7 @@ const InstallmentView: React.FC = () => {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [refundingId, setRefundingId] = useState<string | null>(null);
 
     React.useEffect(() => {
         fetchHistory();
@@ -31,6 +32,27 @@ const InstallmentView: React.FC = () => {
             console.error('Failed to load history:', error);
         } finally {
             setHistoryLoading(false);
+        }
+    };
+
+    const handleRefund = async (subscriptionId: string) => {
+        if (!subscriptionId) {
+            alert('Refund not available for this transaction (Reference missing)');
+            return;
+        }
+        console.log("from handle refund", subscriptionId);
+        if (!window.confirm('Are you sure you want to refund this installment payment?')) return;
+
+        try {
+            setRefundingId(subscriptionId);
+            await stripeService.refundPayment(subscriptionId);
+            alert('Refund initiated successfully!');
+            fetchHistory();
+        } catch (error) {
+            console.error('Refund failed:', error);
+            alert('Failed to initiate refund. Please try again.');
+        } finally {
+            setRefundingId(null);
         }
     };
 
@@ -195,17 +217,33 @@ const InstallmentView: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-8 py-6 text-right text-gray-400">
-                                            {item.downloadUrl && (
-                                                <a
-                                                    href={item.downloadUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group/download"
-                                                    title="Download Invoice"
+                                            <div className="flex items-center justify-end gap-2">
+                                                {/* {item.subscriptionId && ( */}
+                                                <button
+                                                    onClick={() => handleRefund(item.subscriptionId!)}
+                                                    disabled={refundingId === item.subscriptionId}
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all duration-200 group/refund disabled:opacity-50"
+                                                    title="Request Refund"
                                                 >
-                                                    <Download size={16} className="group-hover/download:scale-110 transition-transform" />
-                                                </a>
-                                            )}
+                                                    {refundingId === item.subscriptionId ? (
+                                                        <Loader2 size={16} className="animate-spin text-red-600" />
+                                                    ) : (
+                                                        <RotateCcw size={16} className="group-hover/refund:rotate-[-45deg] transition-transform" />
+                                                    )}
+                                                </button>
+                                                {/* )} */}
+                                                {item.downloadUrl && (
+                                                    <a
+                                                        href={item.downloadUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group/download"
+                                                        title="Download Invoice"
+                                                    >
+                                                        <Download size={16} className="group-hover/download:scale-110 transition-transform" />
+                                                    </a>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

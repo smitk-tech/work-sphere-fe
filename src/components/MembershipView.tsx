@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Loader2, Download } from 'lucide-react';
+import { CheckCircle2, Loader2, Download, RotateCcw } from 'lucide-react';
 import { stripeService } from '../services/stripe.service';
 import StripeCheckout from './StripeCheckout';
 import Cookies from 'js-cookie';
@@ -14,6 +14,7 @@ const MembershipView: React.FC = () => {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [refundingId, setRefundingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchHistory();
@@ -52,6 +53,27 @@ const MembershipView: React.FC = () => {
             // Optionally show error toast
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRefund = async (id: string) => {
+        if (!id) {
+            alert('Refund not available for this transaction (Reference missing)');
+            return;
+        }
+        if (!window.confirm('Are you sure you want to refund this payment?')) return;
+
+        console.log("from handle refund", id);
+        try {
+            setRefundingId(id);
+            await stripeService.refundPayment(id);
+            alert('Refund initiated successfully!');
+            fetchHistory();
+        } catch (error) {
+            console.error('Refund failed:', error);
+            alert('Failed to initiate refund. Please try again.');
+        } finally {
+            setRefundingId(null);
         }
     };
 
@@ -189,22 +211,40 @@ const MembershipView: React.FC = () => {
                                         <td className="px-8 py-6 text-sm font-medium text-gray-500">{formatDate(item.createdAt)}</td>
                                         <td className="px-8 py-6 font-black text-gray-900">{formatCurrency(item.amount, item.currency)}</td>
                                         <td className="px-8 py-6">
-                                            <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest ${item.status === 'succeeded' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest ${item.status === 'succeeded' ? 'bg-green-100 text-green-700' :
+                                                item.status === 'refunded' ? 'bg-red-100 text-red-700' :
+                                                    'bg-yellow-100 text-yellow-700'}`}>
                                                 {item.status}
                                             </span>
                                         </td>
                                         <td className="px-8 py-6 text-right text-gray-400">
-                                            {item.downloadUrl && (
-                                                <a
-                                                    href={item.downloadUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group/download"
-                                                    title="Download Invoice"
-                                                >
-                                                    <Download size={16} className="group-hover/download:scale-110 transition-transform" />
-                                                </a>
-                                            )}
+                                            <div className="flex items-center justify-end gap-2">
+                                                {item.status === 'succeeded' && (
+                                                    <button
+                                                        onClick={() => handleRefund(item.subscriptionId || item.paymentIntentId)}
+                                                        disabled={refundingId === (item.subscriptionId || item.paymentIntentId)}
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all duration-200 group/refund disabled:opacity-50"
+                                                        title="Request Refund"
+                                                    >
+                                                        {(refundingId === item.subscriptionId || refundingId === item.paymentIntentId) ? (
+                                                            <Loader2 size={16} className="animate-spin text-red-600" />
+                                                        ) : (
+                                                            <RotateCcw size={16} className="group-hover/refund:rotate-[-45deg] transition-transform" />
+                                                        )}
+                                                    </button>
+                                                )}
+                                                {item.downloadUrl && (
+                                                    <a
+                                                        href={item.downloadUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group/download"
+                                                        title="Download Invoice"
+                                                    >
+                                                        <Download size={16} className="group-hover/download:scale-110 transition-transform" />
+                                                    </a>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

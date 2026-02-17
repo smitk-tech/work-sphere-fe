@@ -7,6 +7,8 @@ export interface PaymentHistoryItem {
     description: string;
     type: 'one_time' | 'subscription';
     downloadUrl?: string;
+    paymentIntentId: string;
+    subscriptionId?: string;
 }
 
 export interface PaymentIntentResponse {

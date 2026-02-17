@@ -71,6 +71,21 @@ class StripeService {
             throw error;
         }
     }
+
+    /**
+     * Refunds a payment
+     */
+    async refundPayment(paymentIntentId: string) {
+        try {
+            const response = await api.post<{ status: string }>('/payment/refund', {
+                paymentIntentId
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Failed to refund payment:', error);
+            throw error;
+        }
+    }
 }
 
 // Export singleton instance
