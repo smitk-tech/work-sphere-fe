@@ -61,7 +61,7 @@ const InstallmentView: React.FC = () => {
             setLoading(true);
             const email = Cookies.get('user_email');
             if (!email) {
-                console.error('No user email found');
+                console.error('No user found');
                 return;
             }
 
