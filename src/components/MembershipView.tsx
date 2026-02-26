@@ -63,7 +63,7 @@ const MembershipView: React.FC = () => {
         }
         if (!window.confirm('Are you sure you want to refund this payment?')) return;
 
-        console.log("from handle refund", id);
+        console.log("handle refund", id);
         try {
             setRefundingId(id);
             await stripeService.refundPayment(id);
