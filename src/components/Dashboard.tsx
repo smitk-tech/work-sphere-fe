@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import MembershipView from './MembershipView';
 import InstallmentView from './InstallmentView';
+import WhatsappView from './WhatsappView';
 
 interface DashboardProps {
     children?: React.ReactNode;
 }
 
-type TabType = 'membership' | 'installment' | 'cancel';
+type TabType = 'membership' | 'installment' | 'whatsapp';
 
 const Dashboard: React.FC<DashboardProps> = () => {
     const navigate = useNavigate();
@@ -26,6 +27,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 return <MembershipView />;
             case 'installment':
                 return <InstallmentView />;
+            case 'whatsapp':
+                return <WhatsappView />;
             default:
                 return <MembershipView />;
         }
@@ -34,6 +37,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const navItems = [
         { id: 'membership', label: 'SP membership', icon: LayoutDashboard },
         { id: 'installment', label: 'SP membership Installment', icon: CreditCard },
+        { id: 'whatsapp', label: 'Whatsapp chat', icon: CreditCard },
     ];
 
     return (
