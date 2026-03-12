@@ -53,7 +53,13 @@ const WhatsappView: React.FC = () => {
         initializeKeysAndUsers();
     }, []);
 
+    const currentUserEmail = Cookies.get('user_email')?.toLowerCase();
+    
     const filteredUsers = users.filter((user) => {
+        if (currentUserEmail && user.email.toLowerCase() === currentUserEmail) {
+            return false;
+        }
+
         const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase());
