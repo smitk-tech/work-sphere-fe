@@ -3,6 +3,8 @@ import { userService } from '../services/user.service';
 import type { User } from '../services/user.service';
 import { messageService } from '../services/message.service';
 import { Search, Send, User as UserIcon } from 'lucide-react';
+import Cookies from 'js-cookie';
+import { generateKeyPair, exportPrivateKey, exportPublicKey, encryptMessage } from '../utils/crypto';
 
 const WhatsappView: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -12,21 +14,43 @@ const WhatsappView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState('');
+    const [keyStatus, setKeyStatus] = useState<string>('Initializing E2EE...');
 
     useEffect(() => {
-        const fetchUsers = async () => {
+        const initializeKeysAndUsers = async () => {
             try {
+                const email = Cookies.get('user_email');
+                if (email) {
+                    const existingPrivKey = localStorage.getItem(`privKey_${email}`);
+                    if (!existingPrivKey) {
+                        setKeyStatus('Generating your encryption keys...');
+                        // Generate keypair for E2EE
+                        const keyPair = await generateKeyPair();
+                        console.log("keypair ", keyPair);
+                        const pubKeyBase64 = await exportPublicKey(keyPair.publicKey);
+                        console.log("public key ", pubKeyBase64);
+                        const privKeyBase64 = await exportPrivateKey(keyPair.privateKey);
+                        console.log("private key ", privKeyBase64);
+                        // Save private key locally
+                        localStorage.setItem(`privKey_${email}`, privKeyBase64);
+
+                        // Send public key to server
+                        await userService.updatePublicKey(email, pubKeyBase64);
+                    }
+                    setKeyStatus('');
+                }
+
                 const data = await userService.getAllUsers();
                 setUsers(data);
             } catch (err) {
-                setError('Failed to load users');
+                setError('Failed to load users or initialize encryption');
                 console.error(err);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchUsers();
+        initializeKeysAndUsers();
     }, []);
 
     const filteredUsers = users.filter((user) => {
@@ -39,17 +63,25 @@ const WhatsappView: React.FC = () => {
         e.preventDefault();
         if (!selectedUser || !message.trim()) return;
 
+        if (!selectedUser.publicKey) {
+            alert('Cannot send message: This user has not generated an encryption key yet.');
+            return;
+        }
+
         setIsSending(true);
         try {
+            // Encrypt message using the receiver's public key
+            const encryptedText = await encryptMessage(selectedUser.publicKey, message.trim());
+
             await messageService.sendMessage({
                 receiverId: selectedUser.id,
-                ciphertext: message.trim()
+                ciphertext: encryptedText
             });
             setMessage('');
-            alert('Message sent anonymously!');
+            alert('Message encrypted and sent successfully!');
         } catch (err) {
             console.error('Failed to send message:', err);
-            alert('Failed to send message');
+            alert('Failed to send encrypted message');
         } finally {
             setIsSending(false);
         }
@@ -61,6 +93,12 @@ const WhatsappView: React.FC = () => {
             <div className="w-1/3 border-r border-gray-100 flex flex-col bg-gray-50/50">
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-xl font-black text-gray-900 mb-4 tracking-tight">Anonymous Chat</h2>
+                    {keyStatus && (
+                        <div className="mb-4 text-xs font-bold text-blue-600 bg-blue-50 py-2 px-3 rounded-lg flex items-center justify-between">
+                            <span>{keyStatus}</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin"></div>
+                        </div>
+                    )}
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
@@ -88,8 +126,8 @@ const WhatsappView: React.FC = () => {
                                 key={user.id}
                                 onClick={() => setSelectedUser(user)}
                                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${selectedUser?.id === user.id
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200 translate-x-1'
-                                        : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-100'
+                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200 translate-x-1'
+                                    : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-100'
                                     }`}
                             >
                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg ${selectedUser?.id === user.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500'
